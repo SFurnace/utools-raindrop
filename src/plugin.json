@@ -1,0 +1,18 @@
+{
+  "main": "index.html",
+  "logo": "asserts/logo.png",
+  "platform": [
+    "win32",
+    "linux"
+  ],
+  "features": [
+    {
+      "code": "search",
+      "explain": "Search bookmarks from raindrop.io",
+      "cmds": [
+        "Raindrop Bookmarks",
+        "Raindrop 书签"
+      ]
+    }
+  ]
+}
