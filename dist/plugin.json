@@ -1,6 +1,6 @@
 {
   "main": "index.html",
-  "logo": "asserts/logo.png",
+  "logo": "assets/logo.png",
   "platform": [
     "win32",
     "linux"

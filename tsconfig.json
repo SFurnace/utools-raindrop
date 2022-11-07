@@ -1,13 +1,15 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
-    "target": "es5",
+    "composite": true,
+    "module": "CommonJS",
+    "target": "ES6",
+    "esModuleInterop": true,
     "sourceMap": true,
-    "types": [
-      "utools-api-types"
-    ]
+    "moduleResolution": "node",
+    "outDir": "dist"
   },
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "tests"
   ]
 }
