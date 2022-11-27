@@ -1,36 +1,36 @@
-class User {
+export interface User {
     id: number;
     name: string;
     email: string;
     groups: Array<CollectionGroup>;
 }
 
-class CollectionGroup {
+export interface CollectionGroup {
     title: string;
     hidden: boolean;
     collectionIds: Array<number>;
 }
 
-class Collection {
+export interface Collection {
     id: number;
-    parentId: number | null;
+    parentId?: number;
     title: string;
     coverUrl: string;
     createdTime: Date;
     lastUpdateTime: Date;
 }
 
-class Raindrop {
+export interface Raindrop {
     id: number;
     collectionId: number;
     type: string;
     coverUrl: string;
     title: string;
-    tags: [string];
+    pinyinTitle?: string;
+    pinyinFirstLetterTitle?: string;
+    tags: Array<string>;
     link: string;
-    important: boolean;
+    important?: boolean;
     createdTime: Date;
     lastUpdateTime: Date;
 }
-
-export {User, CollectionGroup, Collection, Raindrop};
