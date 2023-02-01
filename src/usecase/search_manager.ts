@@ -1,20 +1,28 @@
 import {Raindrop} from "../entity/raindrop";
-import {CacheManager} from "./cache_manager";
-import {IMPORTANT_QUERY_MARK} from "../ports/raindrop";
+import {IMPORTANT_QUERY_MARK} from "../entity/constant";
 
-export interface SearchManager {
-    search(query: string): Array<Raindrop>;
+export type SearchRaindropsReq = {
+    search: string;
+    collection?: number;
+    sort?: string;
+    page?: number;
+    perpage?: number;
+    timeout?: number;
 }
 
-export class SearchManagerImpl implements SearchManager {
-    cache: CacheManager;
+export type SearchRaindropsRsp = {
+    count: number;
+    items: Array<Raindrop>;
+}
 
-    constructor(cache: CacheManager) {
-        this.cache = cache;
-    }
+export interface RaindropAPI {
+    /**@exception Error*/
+    searchRaindrops(req: SearchRaindropsReq): Promise<SearchRaindropsRsp>;
+}
 
+export class SearchManagerImpl {
     search(query: string): Array<Raindrop> {
-        let result = this.cache.loadAll();
+        let result: Array<Raindrop>;
         let param = this.parseQuery(query);
 
         if (param.isFilterValid()) {

@@ -1,6 +1,7 @@
 import axios from "axios";
-import {RaindropAPI, SearchRaindropsReq, SearchRaindropsRsp} from "../domain/ports/raindrop";
-import {fixRaindropJsonData} from "../domain/ports/helper";
+import {fixRaindropJsonData} from "./helper";
+import {RaindropAPI, SearchRaindropsReq, SearchRaindropsRsp} from "../usecase/search_manager";
+
 
 interface APIOptions {
     defaultCollection?: number;
@@ -62,6 +63,3 @@ export class RaindropAPIImpl implements RaindropAPI {
         });
     }
 }
-
-
-

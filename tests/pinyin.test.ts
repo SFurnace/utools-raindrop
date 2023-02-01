@@ -1,5 +1,5 @@
 import {readFileSync} from "fs";
-import {Raindrop} from "../src/domain/entity/raindrop";
+import {Raindrop} from "../src/entity/raindrop";
 import pinyin from "pinyin";
 
 test("pinyin", () => {
