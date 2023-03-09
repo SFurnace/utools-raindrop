@@ -1,18 +1,21 @@
 {
   "compilerOptions": {
+    "types": [
+      "utools-api-types",
+      "@types/node"
+    ],
     "composite": true,
     "module": "CommonJS",
-    "target": "ES6",
-    "esModuleInterop": true,
+    "target": "ES5",
+    "esModuleInterop": false,
     "sourceMap": true,
-    "moduleResolution": "node",
+    "moduleResolution": "Node",
     "outDir": "dist"
   },
   "include": [
     "."
   ],
   "exclude": [
-    "node_modules",
     "tests"
   ]
 }

@@ -1,11 +1,19 @@
 {
-  "main": "index.html",
+  "preload": "src/preload.js",
   "logo": "assets/logo.png",
   "platform": [
     "win32",
     "linux"
   ],
   "features": [
+    {
+      "code": "setting",
+      "explain": "Plugin settings",
+      "cmds": [
+        "Raindrop Settings",
+        "Raindrop 设置"
+      ]
+    },
     {
       "code": "search",
       "explain": "Search bookmarks from raindrop.io",
