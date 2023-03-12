@@ -8,7 +8,7 @@
     "module": "CommonJS",
     "target": "ES5",
     "esModuleInterop": false,
-    "sourceMap": true,
+    "sourceMap": false,
     "moduleResolution": "Node",
     "outDir": "dist"
   },
@@ -16,6 +16,7 @@
     "."
   ],
   "exclude": [
-    "tests"
+    "tests",
+    "dist"
   ]
 }
