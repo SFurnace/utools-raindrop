@@ -72,7 +72,21 @@ function settingSelect(action, itemData, callbackSetList) {
     window.utools.outPlugin();
 }
 var raindropAPIObj;
+var globalAbort;
 function searchSearch(action, searchWord, callbackSetList) {
+    if (globalAbort != null) {
+        globalAbort.abort();
+    }
+    var localAbort = new AbortController();
+    globalAbort = localAbort;
+    setTimeout(function () {
+        if (localAbort.signal.aborted) {
+            return;
+        }
+        doRealSearch(searchWord, localAbort, callbackSetList);
+    }, 50);
+}
+function doRealSearch(searchWord, localAbort, callbackSetList) {
     if (raindropAPIObj == null) {
         var accessKey = window.utools.dbStorage.getItem(RAINDROP_ACCESS_KEY);
         if (accessKey === null || accessKey === '') {
@@ -81,7 +95,7 @@ function searchSearch(action, searchWord, callbackSetList) {
         }
         raindropAPIObj = new RaindropAPIImpl(accessKey, { defaultPerPage: 25, defaultTimeoutMs: 10000 });
     }
-    raindropAPIObj.searchRaindrops({ search: searchWord }).then(function (value) {
+    raindropAPIObj.searchRaindrops({ search: searchWord, abort: localAbort }).then(function (value) {
         if (value.items.length > 0) {
             callbackSetList(value.items.map(function (v) {
                 var importantStr = v.important ? "".concat(IMPORTANT_QUERY_MARK, " ") : '';
@@ -103,7 +117,11 @@ function searchSearch(action, searchWord, callbackSetList) {
             ]);
         }
     }).catch(function (reason) {
-        window.utools.showNotification("search raindrop failed: ".concat(reason));
+        if (reason.name !== 'AbortError') {
+            window.utools.showNotification("search raindrop failed: ".concat(reason));
+        }
+    }).finally(function () {
+        globalAbort = null;
     });
 }
 function searchSelect(action, itemData, callbackSetList) {
@@ -124,15 +142,15 @@ var RaindropAPIImpl = /** @class */ (function () {
     }
     /**@exception Error*/
     RaindropAPIImpl.prototype.searchRaindrops = function (req) {
-        var _a, _b, _c, _d, _e;
+        var _a, _b, _c, _d, _e, _f;
         var targetUrl = new URL("".concat(RaindropAPIImpl.RAINDROP_SEARCH_URL, "/").concat((_a = req.collection) !== null && _a !== void 0 ? _a : this.defaultCollection));
         targetUrl.searchParams.append("search", req.search);
         targetUrl.searchParams.append("sort", (_b = req.sort) !== null && _b !== void 0 ? _b : '');
         targetUrl.searchParams.append("page", String((_c = req.page) !== null && _c !== void 0 ? _c : 0));
         targetUrl.searchParams.append("perpage", String((_d = req.perpage) !== null && _d !== void 0 ? _d : this.defaultPerPage));
         var headers = { Authorization: "Bearer ".concat(this.accessToken) };
-        var controller = new AbortController();
-        setTimeout(controller.abort, (_e = req.timeout) !== null && _e !== void 0 ? _e : this.defaultTimeout);
+        var controller = (_e = req.abort) !== null && _e !== void 0 ? _e : new AbortController();
+        setTimeout(controller.abort, (_f = req.timeout) !== null && _f !== void 0 ? _f : this.defaultTimeout);
         return fetch(targetUrl, { headers: headers, signal: controller.signal }).then(function (rsp) {
             return rsp.json();
         });

@@ -6,7 +6,9 @@ declare function settingSearch(action: any, searchWord: any, callbackSetList: an
 declare const RAINDROP_ACCESS_KEY = "raindrop access key";
 declare function settingSelect(action: any, itemData: any, callbackSetList: any): void;
 declare let raindropAPIObj: RaindropAPIImpl;
+declare let globalAbort: AbortController;
 declare function searchSearch(action: any, searchWord: any, callbackSetList: any): void;
+declare function doRealSearch(searchWord: any, localAbort: AbortController, callbackSetList: any): void;
 declare function searchSelect(action: any, itemData: any, callbackSetList: any): void;
 declare const IMPORTANT_QUERY_MARK = "\u2764\uFE0F";
 declare type SearchRaindropsReq = {
@@ -16,6 +18,7 @@ declare type SearchRaindropsReq = {
     page?: number;
     perpage?: number;
     timeout?: number;
+    abort?: AbortController;
 };
 declare type SearchRaindropsRsp = {
     count: number;

@@ -80,8 +80,25 @@ function settingSelect(action, itemData, callbackSetList) { // 用户选择列�
 }
 
 let raindropAPIObj: RaindropAPIImpl;
+let globalAbort: AbortController;
 
 function searchSearch(action, searchWord, callbackSetList) {
+    if (globalAbort != null) {
+        globalAbort.abort();
+    }
+    let localAbort = new AbortController();
+    globalAbort = localAbort;
+
+    setTimeout(() => {
+        if (localAbort.signal.aborted) {
+            return;
+        }
+
+        doRealSearch(searchWord, localAbort, callbackSetList);
+    }, 50);
+}
+
+function doRealSearch(searchWord, localAbort: AbortController, callbackSetList) {
     if (raindropAPIObj == null) {
         let accessKey = window.utools.dbStorage.getItem(RAINDROP_ACCESS_KEY);
         if (accessKey === null || accessKey === '') {
@@ -90,8 +107,7 @@ function searchSearch(action, searchWord, callbackSetList) {
         }
         raindropAPIObj = new RaindropAPIImpl(accessKey, {defaultPerPage: 25, defaultTimeoutMs: 10000});
     }
-
-    raindropAPIObj.searchRaindrops({search: searchWord}).then(value => {
+    raindropAPIObj.searchRaindrops({search: searchWord, abort: localAbort}).then(value => {
         if (value.items.length > 0) {
             callbackSetList(
                 value.items.map((v) => {
@@ -114,7 +130,11 @@ function searchSearch(action, searchWord, callbackSetList) {
             ]);
         }
     }).catch(reason => {
-        window.utools.showNotification(`search raindrop failed: ${reason}`);
+        if (reason.name !== 'AbortError') {
+            window.utools.showNotification(`search raindrop failed: ${reason}`);
+        }
+    }).finally(() => {
+        globalAbort = null;
     });
 }
 
@@ -136,6 +156,7 @@ type SearchRaindropsReq = {
     page?: number;
     perpage?: number;
     timeout?: number;
+    abort?: AbortController;
 }
 
 type SearchRaindropsRsp = {
@@ -187,7 +208,7 @@ class RaindropAPIImpl {
         targetUrl.searchParams.append("page", String(req.page ?? 0));
         targetUrl.searchParams.append("perpage", String(req.perpage ?? this.defaultPerPage));
         let headers = {Authorization: `Bearer ${this.accessToken}`};
-        let controller = new AbortController();
+        let controller = req.abort ?? new AbortController();
 
         setTimeout(controller.abort, req.timeout ?? this.defaultTimeout);
         return fetch(targetUrl, {headers: headers, signal: controller.signal}).then(rsp => {
