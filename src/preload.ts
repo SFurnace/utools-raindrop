@@ -80,62 +80,70 @@ function settingSelect(action, itemData, callbackSetList) { // 用户选择列�
 }
 
 let raindropAPIObj: RaindropAPIImpl;
+let globalTimerId: any;
 let globalAbort: AbortController;
 
 function searchSearch(action, searchWord, callbackSetList) {
     if (globalAbort != null) {
         globalAbort.abort();
     }
-    let localAbort = new AbortController();
-    globalAbort = localAbort;
+    if (globalTimerId != null) {
+        clearTimeout(globalTimerId);
+    }
 
-    setTimeout(() => {
+    let localTimerId;
+    let localAbort = new AbortController();
+    localTimerId = setTimeout(() => {
         if (localAbort.signal.aborted) {
             return;
         }
 
-        doRealSearch(searchWord, localAbort, callbackSetList);
+        if (raindropAPIObj == null) {
+            let accessKey = window.utools.dbStorage.getItem(RAINDROP_ACCESS_KEY);
+            if (accessKey === null || accessKey === '') {
+                window.utools.showNotification('please set raindrop access key first');
+                return;
+            }
+            raindropAPIObj = new RaindropAPIImpl(accessKey, {defaultPerPage: 25, defaultTimeoutMs: 10000});
+        }
+        raindropAPIObj.searchRaindrops({search: searchWord, abort: localAbort}).then(value => {
+            if (value.items.length > 0) {
+                callbackSetList(
+                    value.items.map((v) => {
+                        let importantStr = v.important ? `${IMPORTANT_QUERY_MARK} ` : '';
+                        let tagStr = v.tags.length == 0 ? '' : `${v.tags.map((tag) => '#' + tag).join(' ')} `;
+                        let descStr = (v.excerpt.length == 0) ? '' : (v.excerpt.length > 50 ? `【${v.excerpt.slice(0, 50)}...】` : `【${v.excerpt}】`);
+                        return {
+                            title: v.title,
+                            description: `${importantStr}${tagStr}${descStr}`,
+                            icon: v.cover ? v.cover : 'assets/logo.png',
+                            url: v.link
+                        };
+                    })
+                );
+            } else {
+                callbackSetList([
+                    {
+                        title: '~~ nothing ~~',
+                    },
+                ]);
+            }
+        }).catch(reason => {
+            if (reason.name !== 'AbortError') {
+                window.utools.showNotification(`search raindrop failed: ${reason}`);
+            }
+        }).finally(() => {
+            if (globalTimerId === localTimerId) {
+                globalTimerId = null;
+            }
+            if (globalAbort === localAbort) {
+                globalAbort = null;
+            }
+        });
     }, 50);
-}
 
-function doRealSearch(searchWord, localAbort: AbortController, callbackSetList) {
-    if (raindropAPIObj == null) {
-        let accessKey = window.utools.dbStorage.getItem(RAINDROP_ACCESS_KEY);
-        if (accessKey === null || accessKey === '') {
-            window.utools.showNotification('please set raindrop access key first');
-            return;
-        }
-        raindropAPIObj = new RaindropAPIImpl(accessKey, {defaultPerPage: 25, defaultTimeoutMs: 10000});
-    }
-    raindropAPIObj.searchRaindrops({search: searchWord, abort: localAbort}).then(value => {
-        if (value.items.length > 0) {
-            callbackSetList(
-                value.items.map((v) => {
-                    let importantStr = v.important ? `${IMPORTANT_QUERY_MARK} ` : '';
-                    let tagStr = v.tags.length == 0 ? '' : `${v.tags.map((tag) => '#' + tag).join(' ')} `;
-                    let descStr = (v.excerpt.length == 0) ? '' : (v.excerpt.length > 50 ? `【${v.excerpt.slice(0, 50)}...】` : `【${v.excerpt}】`);
-                    return {
-                        title: v.title,
-                        description: `${importantStr}${tagStr}${descStr}`,
-                        icon: v.cover ? v.cover : 'assets/logo.png',
-                        url: v.link
-                    };
-                })
-            );
-        } else {
-            callbackSetList([
-                {
-                    title: '~~ nothing ~~',
-                },
-            ]);
-        }
-    }).catch(reason => {
-        if (reason.name !== 'AbortError') {
-            window.utools.showNotification(`search raindrop failed: ${reason}`);
-        }
-    }).finally(() => {
-        globalAbort = null;
-    });
+    globalTimerId = localTimerId;
+    globalAbort = localAbort;
 }
 
 function searchSelect(action, itemData, callbackSetList) {

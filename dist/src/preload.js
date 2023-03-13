@@ -72,57 +72,65 @@ function settingSelect(action, itemData, callbackSetList) {
     window.utools.outPlugin();
 }
 var raindropAPIObj;
+var globalTimerId;
 var globalAbort;
 function searchSearch(action, searchWord, callbackSetList) {
     if (globalAbort != null) {
         globalAbort.abort();
     }
+    if (globalTimerId != null) {
+        clearTimeout(globalTimerId);
+    }
+    var localTimerId;
     var localAbort = new AbortController();
-    globalAbort = localAbort;
-    setTimeout(function () {
+    localTimerId = setTimeout(function () {
         if (localAbort.signal.aborted) {
             return;
         }
-        doRealSearch(searchWord, localAbort, callbackSetList);
+        if (raindropAPIObj == null) {
+            var accessKey = window.utools.dbStorage.getItem(RAINDROP_ACCESS_KEY);
+            if (accessKey === null || accessKey === '') {
+                window.utools.showNotification('please set raindrop access key first');
+                return;
+            }
+            raindropAPIObj = new RaindropAPIImpl(accessKey, { defaultPerPage: 25, defaultTimeoutMs: 10000 });
+        }
+        raindropAPIObj.searchRaindrops({ search: searchWord, abort: localAbort }).then(function (value) {
+            if (value.items.length > 0) {
+                callbackSetList(value.items.map(function (v) {
+                    var importantStr = v.important ? "".concat(IMPORTANT_QUERY_MARK, " ") : '';
+                    var tagStr = v.tags.length == 0 ? '' : "".concat(v.tags.map(function (tag) { return '#' + tag; }).join(' '), " ");
+                    var descStr = (v.excerpt.length == 0) ? '' : (v.excerpt.length > 50 ? "\u3010".concat(v.excerpt.slice(0, 50), "...\u3011") : "\u3010".concat(v.excerpt, "\u3011"));
+                    return {
+                        title: v.title,
+                        description: "".concat(importantStr).concat(tagStr).concat(descStr),
+                        icon: v.cover ? v.cover : 'assets/logo.png',
+                        url: v.link
+                    };
+                }));
+            }
+            else {
+                callbackSetList([
+                    {
+                        title: '~~ nothing ~~',
+                    },
+                ]);
+            }
+        }).catch(function (reason) {
+            if (reason.name !== 'AbortError') {
+                window.utools.showNotification("search raindrop failed: ".concat(reason));
+            }
+        }).finally(function () {
+            if (globalTimerId === localTimerId) {
+                globalTimerId = null;
+            }
+            if (globalAbort === localAbort) {
+                globalAbort = null;
+            }
+        });
     }, 50);
-}
-function doRealSearch(searchWord, localAbort, callbackSetList) {
-    if (raindropAPIObj == null) {
-        var accessKey = window.utools.dbStorage.getItem(RAINDROP_ACCESS_KEY);
-        if (accessKey === null || accessKey === '') {
-            window.utools.showNotification('please set raindrop access key first');
-            return;
-        }
-        raindropAPIObj = new RaindropAPIImpl(accessKey, { defaultPerPage: 25, defaultTimeoutMs: 10000 });
-    }
-    raindropAPIObj.searchRaindrops({ search: searchWord, abort: localAbort }).then(function (value) {
-        if (value.items.length > 0) {
-            callbackSetList(value.items.map(function (v) {
-                var importantStr = v.important ? "".concat(IMPORTANT_QUERY_MARK, " ") : '';
-                var tagStr = v.tags.length == 0 ? '' : "".concat(v.tags.map(function (tag) { return '#' + tag; }).join(' '), " ");
-                var descStr = (v.excerpt.length == 0) ? '' : (v.excerpt.length > 50 ? "\u3010".concat(v.excerpt.slice(0, 50), "...\u3011") : "\u3010".concat(v.excerpt, "\u3011"));
-                return {
-                    title: v.title,
-                    description: "".concat(importantStr).concat(tagStr).concat(descStr),
-                    icon: v.cover ? v.cover : 'assets/logo.png',
-                    url: v.link
-                };
-            }));
-        }
-        else {
-            callbackSetList([
-                {
-                    title: '~~ nothing ~~',
-                },
-            ]);
-        }
-    }).catch(function (reason) {
-        if (reason.name !== 'AbortError') {
-            window.utools.showNotification("search raindrop failed: ".concat(reason));
-        }
-    }).finally(function () {
-        globalAbort = null;
-    });
+    globalTimerId = localTimerId;
+    globalAbort = localAbort;
 }
 function searchSelect(action, itemData, callbackSetList) {
     window.utools.hideMainWindow();
