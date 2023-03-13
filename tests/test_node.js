@@ -1,7 +1,3 @@
-let c0 = new AbortController()
-let c1 = new AbortController()
-
-console.log(c0 == c1)
-console.log(c0 === c1)
-console.log(c0 === c0)
-console.log(c1 === c1)
+let [_0, _1, index, content ] = `@100 haha`.match(/(@(\d+) )?\s*(\S+)\s*/)
+console.log(index)
+console.log(content)

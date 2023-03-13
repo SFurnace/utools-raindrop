@@ -4,12 +4,23 @@ declare const SET_ACCESS_KEY_TITLE = "Set Access Key";
 declare function settingEnter(action: any, callbackSetList: any): void;
 declare function settingSearch(action: any, searchWord: any, callbackSetList: any): void;
 declare const RAINDROP_ACCESS_KEY = "raindrop access key";
-declare function settingSelect(action: any, itemData: any, callbackSetList: any): void;
+declare function settingSelect(action: any, itemData: any): void;
+declare function searchEnter(action: any, callbackSetList: any): void;
 declare let raindropAPIObj: RaindropAPIImpl;
 declare let globalTimerId: any;
 declare let globalAbort: AbortController;
 declare function searchSearch(action: any, searchWord: any, callbackSetList: any): void;
-declare function searchSelect(action: any, itemData: any, callbackSetList: any): void;
+declare function searchSelect(action: any, itemData: any): void;
+declare function pinEnter(action: any, callbackSetList: any): void;
+declare const CLEAR_PIN = "Clear Pin";
+declare const CLEAR_ALL_PIN = "Clear All Pin";
+declare const ADD_PIN = "Add Pin";
+declare function pinSearch(action: any, searchWord: any, callbackSetList: any): void;
+declare const RAINDROP_PINS = "raindrop pins";
+declare type RaindropPin = {
+    content: string;
+};
+declare function pinSelect(action: any, itemData: any, callbackSetList: any): void;
 declare const IMPORTANT_QUERY_MARK = "\u2764\uFE0F";
 declare type SearchRaindropsReq = {
     search: string;

@@ -21,6 +21,14 @@
         "Raindrop Bookmarks",
         "Raindrop 书签"
       ]
+    },
+    {
+      "code": "pin",
+      "explain": "Manage Raindrop Pins",
+      "cmds": [
+        "Raindrop Pins",
+        "Raindrop 图钉"
+      ]
     }
   ]
 }

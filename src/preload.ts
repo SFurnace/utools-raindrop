@@ -5,18 +5,29 @@ window.exports = {
             enter: settingEnter,
             search: settingSearch,
             select: settingSelect,
-            placeholder: "搜索"
+            placeholder: "输入 Access Key 进行设置"
         }
     },
 
     "search": {
         mode: "list",
         args: {
+            enter: searchEnter,
             search: searchSearch,
             select: searchSelect,
             placeholder: "搜索"
         }
-    }
+    },
+
+    "pin": {
+        mode: "list",
+        args: {
+            enter: pinEnter,
+            search: pinSearch,
+            select: pinSelect,
+            placeholder: "输入 Pin 进行设置"
+        }
+    },
 };
 
 /* utools preload event functions */
@@ -29,18 +40,16 @@ function settingEnter(action, callbackSetList) {
     settingSearch(action, '', callbackSetList);
 }
 
-function settingSearch(action, searchWord, callbackSetList) { // 子输入框内容变化时被调用 可选 (未设置则无搜索)
+function settingSearch(action, searchWord, callbackSetList) {
     if (searchWord == '') {
         callbackSetList([
             {
                 title: SHOW_ACCESS_KEY_TITLE,
                 description: 'show current access key value by system notification',
-                icon: ''
             },
             {
                 title: CLEAR_ACCESS_KEY_TITLE,
                 description: 'clear current access key',
-                icon: ''
             },
         ]);
     } else {
@@ -49,7 +58,6 @@ function settingSearch(action, searchWord, callbackSetList) { // 子输入框内
                 title: SET_ACCESS_KEY_TITLE,
                 description: `set access key to ${searchWord}`,
                 data: searchWord,
-                icon: ''
             },
         ]);
     }
@@ -57,26 +65,38 @@ function settingSearch(action, searchWord, callbackSetList) { // 子输入框内
 
 const RAINDROP_ACCESS_KEY = "raindrop access key";
 
-function settingSelect(action, itemData, callbackSetList) { // 用户选择列表中某个条目时被调用
+function settingSelect(action, itemData) {
     window.utools.hideMainWindow();
     switch (itemData.title) {
         case SHOW_ACCESS_KEY_TITLE:
-            window.utools.showNotification(`access key: ${window.utools.dbStorage.getItem(RAINDROP_ACCESS_KEY)}`);
-            return;
+            window.utools.showNotification(`access key: ${window.utools.dbStorage.getItem(RAINDROP_ACCESS_KEY)} ?? ''`);
+            break;
         case CLEAR_ACCESS_KEY_TITLE:
             window.utools.dbStorage.removeItem(RAINDROP_ACCESS_KEY);
             raindropAPIObj = null;
-            return;
+            break;
         case SET_ACCESS_KEY_TITLE:
             if (typeof itemData.data === 'string' && itemData.data != "") {
                 window.utools.dbStorage.setItem(RAINDROP_ACCESS_KEY, itemData.data);
                 raindropAPIObj = null;
 
-                window.utools.showNotification(`access key: ${window.utools.dbStorage.getItem(RAINDROP_ACCESS_KEY)}`);
+                window.utools.showNotification(`access key: ${window.utools.dbStorage.getItem(RAINDROP_ACCESS_KEY) ?? ''}`);
             }
-            return;
+            break;
     }
     window.utools.outPlugin();
+}
+
+function searchEnter(action, callbackSetList) {
+    let pins: Array<RaindropPin> = window.utools.dbStorage.getItem(RAINDROP_PINS) ?? [];
+    if (pins.length > 0) {
+        callbackSetList(pins.map((p) => ({
+            title: p.content ?? 'nothing',
+            isPin: true
+        })));
+    } else {
+        callbackSetList([{title: '~~ no pins ~~'}]);
+    }
 }
 
 let raindropAPIObj: RaindropAPIImpl;
@@ -99,8 +119,8 @@ function searchSearch(action, searchWord, callbackSetList) {
         }
 
         if (raindropAPIObj == null) {
-            let accessKey = window.utools.dbStorage.getItem(RAINDROP_ACCESS_KEY);
-            if (accessKey === null || accessKey === '') {
+            let accessKey = window.utools.dbStorage.getItem(RAINDROP_ACCESS_KEY) ?? '';
+            if (accessKey === '') {
                 window.utools.showNotification('please set raindrop access key first');
                 return;
             }
@@ -122,11 +142,7 @@ function searchSearch(action, searchWord, callbackSetList) {
                     })
                 );
             } else {
-                callbackSetList([
-                    {
-                        title: '~~ nothing ~~',
-                    },
-                ]);
+                callbackSetList([{title: '~~ nothing ~~'}]);
             }
         }).catch(reason => {
             if (reason.name !== 'AbortError') {
@@ -146,10 +162,92 @@ function searchSearch(action, searchWord, callbackSetList) {
     globalAbort = localAbort;
 }
 
-function searchSelect(action, itemData, callbackSetList) {
+function searchSelect(action, itemData) {
+    if (itemData.isPin) {
+        window.utools.setSubInputValue(`${itemData.title} `);
+    } else {
+        window.utools.hideMainWindow();
+        const url = itemData.url;
+        require('electron').shell.openExternal(url);
+        window.utools.outPlugin();
+    }
+}
+
+function pinEnter(action, callbackSetList) {
+    pinSearch(action, '', callbackSetList);
+}
+
+const CLEAR_PIN = "Clear Pin";
+const CLEAR_ALL_PIN = "Clear All Pin";
+const ADD_PIN = "Add Pin";
+
+function pinSearch(action, searchWord, callbackSetList) {
+    if (searchWord.trim() == '') {
+        callbackSetList([
+            {
+                title: CLEAR_PIN,
+                description: 'Clear a specific Pin',
+                showPins: true
+            },
+            {
+                title: CLEAR_ALL_PIN,
+                description: 'Clear all Pins',
+            },
+        ]);
+        return;
+    }
+
+    let [_0, _1, index, content] = searchWord.match(/(@(\d+) )?\s*(.+)/);
+    content = content.trim();
+    if (index === undefined) {
+        callbackSetList([
+            {
+                title: ADD_PIN,
+                description: `append pin:【${content}】`,
+                content: content,
+            }
+        ]);
+    } else {
+        callbackSetList([
+            {
+                title: ADD_PIN,
+                description: `insert at ${index}, pin:【${content}】`,
+                index: index,
+                content: content,
+            },
+        ]);
+    }
+}
+
+const RAINDROP_PINS = "raindrop pins";
+type RaindropPin = {
+    content: string
+}
+
+function pinSelect(action, itemData, callbackSetList) {
+    let pins: Array<RaindropPin> = window.utools.dbStorage.getItem(RAINDROP_PINS) ?? [];
+    switch (itemData.title) {
+        case CLEAR_PIN:
+            callbackSetList(pins.map((p, index) => ({
+                title: `@${index} ${p.content}`,
+                clearPin: true,
+                index: index
+            })));
+            return;
+        case CLEAR_ALL_PIN:
+            window.utools.dbStorage.removeItem(RAINDROP_PINS);
+            break;
+        case ADD_PIN:
+            pins.splice(itemData.index ?? pins.length, 0, {content: itemData.content});
+            window.utools.dbStorage.setItem(RAINDROP_PINS, pins);
+            break;
+        default: // show pins to clear
+            if (itemData.clearPin && typeof itemData.index === 'number') {
+                pins.splice(itemData.index, 1);
+                window.utools.dbStorage.setItem(RAINDROP_PINS, pins);
+            }
+    }
     window.utools.hideMainWindow();
-    const url = itemData.url;
-    require('electron').shell.openExternal(url);
     window.utools.outPlugin();
 }
 
@@ -219,8 +317,6 @@ class RaindropAPIImpl {
         let controller = req.abort ?? new AbortController();
 
         setTimeout(controller.abort, req.timeout ?? this.defaultTimeout);
-        return fetch(targetUrl, {headers: headers, signal: controller.signal}).then(rsp => {
-            return rsp.json();
-        });
+        return fetch(targetUrl, {headers: headers, signal: controller.signal}).then(rsp => rsp.json());
     }
 }
