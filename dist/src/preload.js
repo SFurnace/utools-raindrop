@@ -120,15 +120,18 @@ function searchSearch(action, searchWord, callbackSetList) {
             }
             raindropAPIObj = new RaindropAPIImpl(accessKey, { defaultPerPage: 25, defaultTimeoutMs: 10000 });
         }
-        raindropAPIObj.searchRaindrops({ search: searchWord, abort: localAbort }).then(function (value) {
-            if (value.items.length > 0) {
-                callbackSetList(value.items.map(function (v) {
+        var _b = searchWord.match(/(@(-?\d+))?(.*)/), _0 = _b[0], _1 = _b[1], cId = _b[2], search = _b[3];
+        raindropAPIObj.searchRaindrops({ search: search, collection: cId, abort: localAbort }).then(function (rsp) {
+            var _a;
+            if (((_a = rsp.items) !== null && _a !== void 0 ? _a : []).length > 0) {
+                callbackSetList(rsp.items.map(function (v) {
                     var importantStr = v.important ? "".concat(IMPORTANT_QUERY_MARK, " ") : '';
+                    var collectionStr = v.collectionId ? "@".concat(v.collectionId, " ") : '';
                     var tagStr = v.tags.length == 0 ? '' : "".concat(v.tags.map(function (tag) { return '#' + tag; }).join(' '), " ");
                     var descStr = (v.excerpt.length == 0) ? '' : (v.excerpt.length > 50 ? "\u3010".concat(v.excerpt.slice(0, 50), "...\u3011") : "\u3010".concat(v.excerpt, "\u3011"));
                     return {
                         title: v.title,
-                        description: "".concat(importantStr).concat(tagStr).concat(descStr),
+                        description: "".concat(importantStr).concat(collectionStr).concat(tagStr).concat(descStr),
                         icon: v.cover ? v.cover : 'assets/logo.png',
                         url: v.link
                     };
@@ -185,7 +188,7 @@ function pinSearch(action, searchWord, callbackSetList) {
         ]);
         return;
     }
-    var _a = searchWord.match(/(@(\d+) )?\s*(.+)/), _0 = _a[0], _1 = _a[1], index = _a[2], content = _a[3];
+    var _a = searchWord.match(/(@(-?\d+))?\s*(.+)/), _0 = _a[0], _1 = _a[1], index = _a[2], content = _a[3];
     content = content.trim();
     if (index === undefined) {
         callbackSetList([
@@ -247,15 +250,15 @@ var RaindropAPIImpl = /** @class */ (function () {
     }
     /**@exception Error*/
     RaindropAPIImpl.prototype.searchRaindrops = function (req) {
-        var _a, _b, _c, _d, _e, _f;
+        var _a, _b, _c, _d, _e, _f, _g;
         var targetUrl = new URL("".concat(RaindropAPIImpl.RAINDROP_SEARCH_URL, "/").concat((_a = req.collection) !== null && _a !== void 0 ? _a : this.defaultCollection));
-        targetUrl.searchParams.append("search", req.search);
-        targetUrl.searchParams.append("sort", (_b = req.sort) !== null && _b !== void 0 ? _b : '');
-        targetUrl.searchParams.append("page", String((_c = req.page) !== null && _c !== void 0 ? _c : 0));
-        targetUrl.searchParams.append("perpage", String((_d = req.perpage) !== null && _d !== void 0 ? _d : this.defaultPerPage));
+        targetUrl.searchParams.append("search", (_b = req.search) !== null && _b !== void 0 ? _b : '');
+        targetUrl.searchParams.append("sort", (_c = req.sort) !== null && _c !== void 0 ? _c : '');
+        targetUrl.searchParams.append("page", String((_d = req.page) !== null && _d !== void 0 ? _d : 0));
+        targetUrl.searchParams.append("perpage", String((_e = req.perpage) !== null && _e !== void 0 ? _e : this.defaultPerPage));
         var headers = { Authorization: "Bearer ".concat(this.accessToken) };
-        var controller = (_e = req.abort) !== null && _e !== void 0 ? _e : new AbortController();
-        setTimeout(controller.abort, (_f = req.timeout) !== null && _f !== void 0 ? _f : this.defaultTimeout);
+        var controller = (_f = req.abort) !== null && _f !== void 0 ? _f : new AbortController();
+        setTimeout(controller.abort, (_g = req.timeout) !== null && _g !== void 0 ? _g : this.defaultTimeout);
         return fetch(targetUrl, { headers: headers, signal: controller.signal }).then(function (rsp) { return rsp.json(); });
     };
     RaindropAPIImpl.RAINDROP_SEARCH_URL = "https://api.raindrop.io/rest/v1/raindrops";

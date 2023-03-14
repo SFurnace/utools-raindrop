@@ -126,16 +126,18 @@ function searchSearch(action, searchWord, callbackSetList) {
             }
             raindropAPIObj = new RaindropAPIImpl(accessKey, {defaultPerPage: 25, defaultTimeoutMs: 10000});
         }
-        raindropAPIObj.searchRaindrops({search: searchWord, abort: localAbort}).then(value => {
-            if (value.items.length > 0) {
+        let [_0, _1, cId, search] = searchWord.match(/(@(-?\d+))?(.*)/);
+        raindropAPIObj.searchRaindrops({search: search, collection: cId, abort: localAbort}).then(rsp => {
+            if ((rsp.items ?? []).length > 0) {
                 callbackSetList(
-                    value.items.map((v) => {
+                    rsp.items.map((v) => {
                         let importantStr = v.important ? `${IMPORTANT_QUERY_MARK} ` : '';
+                        let collectionStr = v.collectionId ? `@${v.collectionId} ` : '';
                         let tagStr = v.tags.length == 0 ? '' : `${v.tags.map((tag) => '#' + tag).join(' ')} `;
                         let descStr = (v.excerpt.length == 0) ? '' : (v.excerpt.length > 50 ? `【${v.excerpt.slice(0, 50)}...】` : `【${v.excerpt}】`);
                         return {
                             title: v.title,
-                            description: `${importantStr}${tagStr}${descStr}`,
+                            description: `${importantStr}${collectionStr}${tagStr}${descStr}`,
                             icon: v.cover ? v.cover : 'assets/logo.png',
                             url: v.link
                         };
@@ -197,7 +199,7 @@ function pinSearch(action, searchWord, callbackSetList) {
         return;
     }
 
-    let [_0, _1, index, content] = searchWord.match(/(@(\d+) )?\s*(.+)/);
+    let [_0, _1, index, content] = searchWord.match(/(@(-?\d+))?\s*(.+)/);
     content = content.trim();
     if (index === undefined) {
         callbackSetList([
@@ -309,7 +311,7 @@ class RaindropAPIImpl {
     /**@exception Error*/
     searchRaindrops(req: SearchRaindropsReq): Promise<SearchRaindropsRsp> {
         let targetUrl = new URL(`${RaindropAPIImpl.RAINDROP_SEARCH_URL}/${req.collection ?? this.defaultCollection}`);
-        targetUrl.searchParams.append("search", req.search);
+        targetUrl.searchParams.append("search", req.search ?? '');
         targetUrl.searchParams.append("sort", req.sort ?? '');
         targetUrl.searchParams.append("page", String(req.page ?? 0));
         targetUrl.searchParams.append("perpage", String(req.perpage ?? this.defaultPerPage));
