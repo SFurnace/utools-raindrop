@@ -1,10 +1,6 @@
 {
   "preload": "src/preload.js",
   "logo": "assets/logo.png",
-  "platform": [
-    "win32",
-    "linux"
-  ],
   "features": [
     {
       "code": "setting",
