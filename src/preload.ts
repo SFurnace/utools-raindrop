@@ -1,3 +1,12 @@
+import {
+    CLEAR_ACCESS_KEY_TITLE,
+    IMPORTANT_QUERY_MARK,
+    RAINDROP_ACCESS_KEY,
+    SET_ACCESS_KEY_TITLE,
+    SHOW_ACCESS_KEY_TITLE
+} from "./entity/const";
+import {RaindropAPIImpl} from "./ports/raindrop";
+
 window.exports = {
     "setting": {
         mode: "list",
@@ -32,10 +41,6 @@ window.exports = {
 
 /* utools preload event functions */
 
-const SHOW_ACCESS_KEY_TITLE = "Show Access Key";
-const CLEAR_ACCESS_KEY_TITLE = 'Clear Access Key';
-const SET_ACCESS_KEY_TITLE = 'Set Access Key';
-
 function settingEnter(action, callbackSetList) {
     settingSearch(action, '', callbackSetList);
 }
@@ -62,8 +67,6 @@ function settingSearch(action, searchWord, callbackSetList) {
         ]);
     }
 }
-
-const RAINDROP_ACCESS_KEY = "raindrop access key";
 
 function settingSelect(action, itemData) {
     window.utools.hideMainWindow();
@@ -111,7 +114,7 @@ function searchSearch(action, searchWord, callbackSetList) {
         clearTimeout(globalTimerId);
     }
 
-    let localTimerId;
+    let localTimerId: NodeJS.Timeout;
     let localAbort = new AbortController();
     localTimerId = setTimeout(() => {
         if (localAbort.signal.aborted) {
@@ -253,72 +256,3 @@ function pinSelect(action, itemData, callbackSetList) {
     window.utools.outPlugin();
 }
 
-/* Raindrop API */
-
-const IMPORTANT_QUERY_MARK = '❤️';
-
-type SearchRaindropsReq = {
-    search: string;
-    collection?: number;
-    sort?: string;
-    page?: number;
-    perpage?: number;
-    timeout?: number;
-    abort?: AbortController;
-}
-
-type SearchRaindropsRsp = {
-    count: number;
-    items: Array<Raindrop>;
-}
-
-type Raindrop = {
-    _id: number;
-    collectionId: number;
-    type: string;
-    cover: string;
-    title: string;
-    tags: Array<string>;
-    link: string;
-    important?: boolean;
-    excerpt: string;
-    created: string;
-    lastUpdate: string;
-}
-
-type APIOptions = {
-    defaultCollection?: number;
-    defaultPerPage?: number;
-    defaultTimeoutMs?: number;
-}
-
-class RaindropAPIImpl {
-    private static RAINDROP_SEARCH_URL = "https://api.raindrop.io/rest/v1/raindrops";
-    private static ALL_COLLECTION_ID = 0;
-
-    defaultTimeout: number;
-    defaultCollection: number;
-    defaultPerPage: number;
-    private readonly accessToken: string;
-
-    constructor(accessToken: string, options?: APIOptions) {
-        this.accessToken = accessToken;
-        this.defaultCollection = options?.defaultCollection ?? RaindropAPIImpl.ALL_COLLECTION_ID;
-        this.defaultPerPage = options?.defaultPerPage ?? 50;
-        this.defaultTimeout = options?.defaultTimeoutMs ?? 15000;
-    }
-
-    /**@exception Error*/
-    searchRaindrops(req: SearchRaindropsReq): Promise<SearchRaindropsRsp> {
-        let targetUrl = new URL(`${RaindropAPIImpl.RAINDROP_SEARCH_URL}/${req.collection ?? this.defaultCollection}`);
-        targetUrl.searchParams.append("search", req.search ?? '');
-        targetUrl.searchParams.append("sort", req.sort ?? '');
-        targetUrl.searchParams.append("page", String(req.page ?? 0));
-        targetUrl.searchParams.append("perpage", String(req.perpage ?? this.defaultPerPage));
-        let headers = {Authorization: `Bearer ${this.accessToken}`};
-        let controller = req.abort ?? new AbortController();
-
-        setTimeout(controller.abort, req.timeout ?? this.defaultTimeout);
-        return fetch(targetUrl, {headers: headers, signal: controller.signal}).then(rsp => rsp.json());
-    }
-}

@@ -1,4 +1,6 @@
+import {jest, test} from "@jest/globals";
 import * as process from "node:process";
+// @ts-ignore
 import {RaindropAPIImpl} from "../src/ports/raindrop";
 
 jest.setTimeout(60000);

@@ -1,22 +1,23 @@
 {
-  "compilerOptions": {
-    "types": [
-      "utools-api-types",
-      "@types/node"
+    "compilerOptions": {
+        "types": [
+            "utools-api-types",
+            "@types/node"
+        ],
+        "composite": true,
+        "module": "CommonJS",
+        "target": "ES5",
+        "esModuleInterop": false,
+        "moduleResolution": "Node",
+        "outDir": "dist",
+        "sourceMap": false
+    },
+    "include": [
+        "src"
     ],
-    "composite": true,
-    "module": "CommonJS",
-    "target": "ES5",
-    "esModuleInterop": false,
-    "sourceMap": false,
-    "moduleResolution": "Node",
-    "outDir": "dist"
-  },
-  "include": [
-    "."
-  ],
-  "exclude": [
-    "tests",
-    "dist"
-  ]
+    "exclude": [
+        "dist",
+        "tests",
+        "dist-tests"
+    ]
 }
