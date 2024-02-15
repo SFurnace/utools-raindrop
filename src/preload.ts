@@ -172,8 +172,7 @@ function searchSelect(action, itemData) {
         window.utools.setSubInputValue(`${itemData.title} `);
     } else {
         window.utools.hideMainWindow();
-        const url = itemData.url;
-        require('electron').shell.openExternal(url);
+        window.utools.shellOpenExternal(itemData.url);
         window.utools.outPlugin();
     }
 }
