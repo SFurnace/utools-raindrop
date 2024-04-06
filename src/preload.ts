@@ -94,7 +94,9 @@ function searchEnter(action, callbackSetList) {
     let pins: Array<RaindropPin> = window.utools.dbStorage.getItem(RAINDROP_PINS) ?? [];
     if (pins.length > 0) {
         callbackSetList(pins.map((p) => ({
-            title: p.content ?? 'nothing',
+            title: p.alias ?? p.content ?? 'invalid pin',
+            description: p.alias ? p.content : '',
+            pinContent: p.content,
             isPin: true
         })));
     } else {
@@ -169,7 +171,7 @@ function searchSearch(action, searchWord, callbackSetList) {
 
 function searchSelect(action, itemData) {
     if (itemData.isPin) {
-        window.utools.setSubInputValue(`${itemData.title} `);
+        window.utools.setSubInputValue(`${itemData.pinContent} `);
     } else {
         window.utools.hideMainWindow();
         window.utools.shellOpenExternal(itemData.url);
@@ -201,30 +203,26 @@ function pinSearch(action, searchWord, callbackSetList) {
         return;
     }
 
-    let [_0, _1, index, content] = searchWord.match(/(@(-?\d+))?\s*(.+)/);
-    content = content.trim();
-    if (index === undefined) {
-        callbackSetList([
-            {
-                title: ADD_PIN,
-                description: `append pin:【${content}】`,
-                content: content,
-            }
-        ]);
-    } else {
-        callbackSetList([
-            {
-                title: ADD_PIN,
-                description: `insert at ${index}, pin:【${content}】`,
-                index: index,
-                content: content,
-            },
-        ]);
-    }
+    let [_0, _1, index, _3, alias, content] = searchWord.match(/^(@(-?\d+))?\s*(【([^】]+)】)?\s*(.+)$/);
+    index = index !== undefined ? parseInt(index) : undefined;
+    alias = alias !== undefined ? alias.trim() : undefined;
+    content = content.trim()
+
+    callbackSetList([
+        {
+            title: ADD_PIN,
+            description: formatPin({index: index, alias: alias, content: content}),
+            index: index,
+            alias: alias,
+            content: content,
+        },
+    ]);
 }
 
 const RAINDROP_PINS = "raindrop pins";
 type RaindropPin = {
+    index?: number,
+    alias?: string,
     content: string
 }
 
@@ -233,7 +231,7 @@ function pinSelect(action, itemData, callbackSetList) {
     switch (itemData.title) {
         case CLEAR_PIN:
             callbackSetList(pins.map((p, index) => ({
-                title: `@${index} ${p.content}`,
+                title: formatPin(p),
                 clearPin: true,
                 index: index
             })));
@@ -242,10 +240,13 @@ function pinSelect(action, itemData, callbackSetList) {
             window.utools.dbStorage.removeItem(RAINDROP_PINS);
             break;
         case ADD_PIN:
-            pins.splice(itemData.index ?? pins.length, 0, {content: itemData.content});
+            pins.splice(itemData.index ?? pins.length, 0, {
+                alias: itemData.alias,
+                content: itemData.content
+            });
             window.utools.dbStorage.setItem(RAINDROP_PINS, pins);
             break;
-        default: // show pins to clear
+        default: // 清理某个 pin
             if (itemData.clearPin && typeof itemData.index === 'number') {
                 pins.splice(itemData.index, 1);
                 window.utools.dbStorage.setItem(RAINDROP_PINS, pins);
@@ -255,3 +256,9 @@ function pinSelect(action, itemData, callbackSetList) {
     window.utools.outPlugin();
 }
 
+function formatPin(item: RaindropPin): string {
+    let insertDesc = item.index === undefined ? '' : `(${item.index}) `;
+    let pinDesc = `"${item.content}"`;
+    let aliasDesc = item.alias === undefined ? '' : ` alias: ${item.alias}`;
+    return `${insertDesc}${pinDesc}${aliasDesc}`
+}
